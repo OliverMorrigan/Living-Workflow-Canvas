@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   ReactFlow,
   Background,
@@ -28,8 +28,8 @@ const edgeTypes = { canvasEdge: CanvasEdge };
 
 const defaultEdgeOptions = {
   type: 'canvasEdge',
-  markerEnd: { type: MarkerType.ArrowClosed, width: 10, height: 10, color: '#323844' },
-  data: { relation: 'navigates-to', label: 'navigates to' },
+  markerEnd: { type: MarkerType.ArrowClosed, width: 20, height: 20, color: '#3b82f6' },
+  data: { relation: 'navigates-to', label: '' },
 };
 
 function FlowController() {
@@ -37,12 +37,15 @@ function FlowController() {
   const { nodes } = useCanvasStore();
 
   useEffect(() => {
-    const onFitView = () => fitView({ padding: 0.15, duration: 350 });
-    const onZoomReset = () => setViewport({ x: getViewport().x, y: getViewport().y, zoom: 1 }, { duration: 250 });
+    const onFitView = () => fitView({ padding: 0.2, duration: 400 });
+    const onZoomReset = () => {
+      const { x, y } = getViewport();
+      setViewport({ x, y, zoom: 1 }, { duration: 300 });
+    };
     const onFocusNode = (e: CustomEvent) => {
       const node = nodes.find((n) => n.id === e.detail?.id);
       if (node) {
-        fitView({ nodes: [{ id: node.id }], padding: 0.5, duration: 350 });
+        fitView({ nodes: [{ id: node.id }], padding: 0.5, duration: 500 });
       }
     };
 
@@ -95,8 +98,8 @@ export default function CanvasView() {
         sourceHandle: connection.sourceHandle ?? undefined,
         targetHandle: connection.targetHandle ?? undefined,
         type: 'canvasEdge',
-        markerEnd: { type: MarkerType.ArrowClosed, width: 10, height: 10, color: '#323844' },
-        data: { relation: 'navigates-to', label: 'navigates to' },
+        markerEnd: { type: MarkerType.ArrowClosed, width: 20, height: 20, color: '#3b82f6' },
+        data: { relation: 'navigates-to', label: '' },
       };
       storeAddEdge(newEdge);
     },
@@ -111,7 +114,7 @@ export default function CanvasView() {
   const onPaneClick = useCallback(() => setSelectedNodeId(null), [setSelectedNodeId]);
 
   return (
-    <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+    <div className="flex-1 relative overflow-hidden bg-[#0b0c10]">
       <ReactFlow
         nodes={nodes as Node<CanvasNodeData>[]}
         edges={edges as Edge<CanvasEdgeData>[]}
@@ -124,10 +127,10 @@ export default function CanvasView() {
         edgeTypes={edgeTypes}
         defaultEdgeOptions={defaultEdgeOptions as object}
         fitView
-        fitViewOptions={{ padding: 0.15 }}
-        minZoom={0.1}
-        maxZoom={3}
-        style={{ background: 'transparent' }}
+        fitViewOptions={{ padding: 0.2 }}
+        minZoom={0.05}
+        maxZoom={4}
+        className="selection-layer"
         proOptions={{ hideAttribution: true }}
         elevateEdgesOnSelect
         selectionOnDrag
@@ -140,111 +143,79 @@ export default function CanvasView() {
           gap={24}
           size={1}
           color="#1e2128"
-          style={{ background: '#111216' }}
+          className="opacity-40"
         />
-        <Controls style={{ bottom: 16, left: 16 }} showInteractive={false} />
+        <Controls 
+          className="!bg-[#1a1d23] !border-[#252830] !rounded-lg !overflow-hidden !shadow-2xl mb-4 ml-4" 
+          showInteractive={false} 
+        />
         <MiniMap
-          style={{ bottom: 16, right: 16, background: '#131518' }}
-          maskColor="rgba(10,12,18,0.75)"
+          className="!bg-[#131518] !border-[#252830] !rounded-lg !shadow-2xl mr-4 mb-4"
+          maskColor="rgba(10,12,18,0.7)"
           nodeColor={(node: Node) => {
             const data = node.data as CanvasNodeData;
             return NODE_TYPE_CONFIGS[data.type]?.accentColor || '#3b82f6';
           }}
+          nodeStrokeWidth={3}
+          zoomable
+          pannable
         />
       </ReactFlow>
 
-      {nodes.length === 0 && (
-        <div
-          style={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            textAlign: 'center',
-            pointerEvents: 'none',
-          }}
-        >
-          <div style={{ fontSize: '40px', marginBottom: '12px', opacity: 0.06 }}>◈</div>
-          <div style={{ fontSize: '12px', color: '#252830', fontFamily: 'monospace' }}>Canvas vazio</div>
-          <div style={{ fontSize: '10px', color: '#1e2128', marginTop: '6px', fontFamily: 'monospace' }}>
-            Pressione{' '}
-            <kbd style={{ background: '#1a1d23', border: '1px solid #252830', borderRadius: '2px', padding: '0 4px' }}>N</kbd>
-            {' '}para adicionar um nó ·{' '}
-            <kbd style={{ background: '#1a1d23', border: '1px solid #252830', borderRadius: '2px', padding: '0 4px' }}>⌘K</kbd>
-            {' '}para buscar
-          </div>
-        </div>
-      )}
-
-      {/* Shortcuts legend — bottom-left, stacked above zoom controls */}
-      <div
-        style={{
-          position: 'absolute',
-          bottom: 100,
-          left: 16,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '4px',
-          pointerEvents: 'none',
-          zIndex: 5,
-        }}
-      >
+      {/* Shortcuts Legend */}
+      <div className="absolute bottom-6 left-24 flex flex-col gap-1.5 pointer-events-none z-10 opacity-40 hover:opacity-100 transition-opacity duration-300">
         {[
           ['⌘K', 'Command Bar'],
-          ['N', 'Novo nó'],
-          ['Del', 'Remover'],
-          ['F', 'Fit view'],
-          ['⌘Z', 'Desfazer'],
+          ['N', 'New Node'],
+          ['Del', 'Remove'],
+          ['F', 'Fit View'],
+          ['0', '100% Zoom'],
+          ['⌘Z', 'Undo'],
         ].map(([key, label]) => (
-          <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <kbd
-              style={{
-                background: '#13151a',
-                border: '1px solid #1e2128',
-                borderRadius: '3px',
-                padding: '1px 5px',
-                fontSize: '8px',
-                fontFamily: 'monospace',
-                color: '#2e3340',
-                minWidth: '24px',
-                textAlign: 'center',
-              }}
-            >
+          <div key={key} className="flex items-center gap-3">
+            <kbd className="min-w-[32px] px-1.5 py-0.5 bg-[#13151a] border border-[#1e2128] rounded text-[10px] font-mono text-gray-500 text-center">
               {key}
             </kbd>
-            <span style={{ fontSize: '8px', color: '#1e2128', fontFamily: 'monospace' }}>{label}</span>
+            <span className="text-[10px] font-mono text-gray-600 uppercase tracking-wider">{label}</span>
           </div>
         ))}
       </div>
 
-      {/* Selection indicator */}
+      {/* Context Indicator */}
       {selectedNodeId && (
-        <div
-          style={{
-            position: 'absolute',
-            top: '10px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            background: '#13151a',
-            border: '1px solid #1e2128',
-            borderRadius: '4px',
-            padding: '3px 10px',
-            fontSize: '9px',
-            fontFamily: 'monospace',
-            color: '#3d4455',
-            pointerEvents: 'none',
-            zIndex: 5,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-          }}
-        >
-          <span style={{ color: '#6b7280' }}>
-            {(nodes.find((n) => n.id === selectedNodeId)?.data as CanvasNodeData)?.label}
+        <div className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center gap-3 px-4 py-2 bg-[#13151a]/90 backdrop-blur-md border border-white/5 rounded-full shadow-2xl pointer-events-none animate-in fade-in slide-in-from-top-4">
+          <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse shadow-[0_0_8px_#3b82f6]" />
+          <span className="text-[12px] font-medium text-gray-300">
+            Editing: <span className="text-white font-bold">{(nodes.find((n) => n.id === selectedNodeId)?.data as CanvasNodeData)?.label}</span>
           </span>
-          <span>selecionado</span>
-          <span style={{ color: '#252830' }}>·</span>
-          <span>duplo-clique para editar</span>
+          <div className="h-3 w-[1px] bg-white/10" />
+          <span className="text-[10px] text-gray-500 font-mono">DOUBLE-CLICK TO RENAME</span>
+        </div>
+      )}
+
+      {/* Empty State */}
+      {nodes.length === 0 && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none">
+          <div className="relative mb-6">
+            <div className="absolute inset-0 bg-blue-500/20 blur-3xl rounded-full" />
+            <div className="relative w-20 h-20 flex items-center justify-center border border-white/10 rounded-2xl bg-[#13151a]/50 backdrop-blur-sm">
+              <svg viewBox="0 0 24 24" fill="none" className="w-10 h-10 text-blue-500/50">
+                <path d="M12 4V20M4 12H20" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+            </div>
+          </div>
+          <h2 className="text-lg font-bold text-gray-400 mb-2">Living Software Canvas</h2>
+          <p className="text-sm text-gray-600 font-mono mb-8 max-w-sm text-center px-6">
+            Architecture isn&apos;t static. Scan your project or start building visually.
+          </p>
+          <div className="flex gap-4">
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-lg border border-white/5 text-[11px] text-gray-500 font-mono">
+              <kbd className="bg-white/10 px-1 rounded text-gray-300">N</kbd> Create node
+            </div>
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-lg border border-white/5 text-[11px] text-gray-500 font-mono">
+              <kbd className="bg-white/10 px-1 rounded text-gray-300">⌘K</kbd> Search actions
+            </div>
+          </div>
         </div>
       )}
     </div>
