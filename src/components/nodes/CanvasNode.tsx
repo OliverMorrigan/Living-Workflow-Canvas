@@ -59,19 +59,9 @@ const NODE_TYPE_ICONS: Record<string, React.ReactNode> = {
   'ui-action': (
     <svg viewBox="0 0 16 16" fill="none" width="14" height="14">
       <rect x="2" y="5" width="12" height="6" rx="2" stroke="currentColor" strokeWidth="1.5"/>
-      <path d="M6 8H10M8 6.5V9.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+      <path d="M6 8H10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
     </svg>
   ),
-};
-
-const HANDLE_STYLE: React.CSSProperties = {
-  background: '#ffffff',
-  width: 10,
-  height: 10,
-  border: '2px solid #1e2128',
-  boxShadow: '0 0 8px rgba(0,0,0,0.5)',
-  opacity: 0,
-  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
 };
 
 function CanvasNode({ data, selected, id }: NodeProps<CanvasNodeData>) {
@@ -118,28 +108,22 @@ function CanvasNode({ data, selected, id }: NodeProps<CanvasNodeData>) {
   }, [commitEdit]);
 
   const showHandles = hovered || selected;
-  const handleStyleActive: React.CSSProperties = { 
-    ...HANDLE_STYLE, 
-    opacity: showHandles ? 1 : 0, 
-    borderColor: typeConfig.accentColor,
-    transform: showHandles ? 'scale(1)' : 'scale(0.8)'
-  };
 
   return (
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onDoubleClick={handleDoubleClick}
-      className={`relative rounded-xl overflow-hidden backdrop-blur-xl transition-all duration-300 ease-out 
-        ${selected ? 'ring-2 ring-offset-2 ring-offset-[#0b0c10] shadow-[0_16px_40px_rgba(0,0,0,0.6)] z-50' : 'shadow-lg hover:shadow-xl'}`
+      className={`relative rounded-xl overflow-hidden backdrop-blur-md transition-all duration-300 ease-out 
+        ${selected ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-[#0b0c10] shadow-[0_16px_40px_rgba(0,0,0,0.6)] z-50' : 'shadow-lg hover:shadow-xl'}`
       }
       style={{
-        background: 'rgba(21, 23, 28, 0.85)',
-        border: `1px solid ${selected ? typeConfig.accentColor : 'rgba(255,255,255,0.06)'}`,
+        background: 'rgba(21, 23, 28, 0.8)',
+        border: `1px solid ${selected ? typeConfig.accentColor : 'rgba(255,255,255,0.08)'}`,
         width: '240px',
+        minHeight: '130px',
         cursor: isEditingLabel ? 'text' : 'pointer',
         boxShadow: selected ? `0 0 30px ${typeConfig.accentColor}33` : undefined,
-        transform: hovered && !selected ? 'translateY(-2px)' : 'none',
       }}
     >
       {/* Top glowing accent bar */}
@@ -147,22 +131,22 @@ function CanvasNode({ data, selected, id }: NodeProps<CanvasNodeData>) {
         className="absolute top-0 left-0 w-full h-[3px]" 
         style={{ 
           background: `linear-gradient(90deg, transparent 0%, ${typeConfig.accentColor} 50%, transparent 100%)`,
-          opacity: selected || hovered ? 1 : 0.7,
+          opacity: selected || hovered ? 1 : 0.6,
         }} 
       />
 
       {/* Main Content Area */}
-      <div className="p-4">
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex items-center gap-2">
+      <div className="p-4 flex flex-col h-full gap-3">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-2 overflow-hidden">
             <div 
-              className="p-1.5 rounded-md flex items-center justify-center shadow-inner"
-              style={{ background: 'rgba(0,0,0,0.3)', color: typeConfig.accentColor, border: '1px solid rgba(255,255,255,0.05)' }}
+              className="p-1.5 rounded-md flex items-center justify-center shrink-0"
+              style={{ background: 'rgba(0,0,0,0.4)', color: typeConfig.accentColor, border: '1px solid rgba(255,255,255,0.1)' }}
             >
               {NODE_TYPE_ICONS[data.type]}
             </div>
-            <div>
-              <div className="text-[10px] font-mono tracking-widest uppercase opacity-70" style={{ color: typeConfig.accentColor }}>
+            <div className="overflow-hidden">
+              <div className="text-[9px] font-mono tracking-widest uppercase opacity-60 font-bold" style={{ color: typeConfig.accentColor }}>
                 {typeConfig.label}
               </div>
               {isEditingLabel ? (
@@ -176,7 +160,7 @@ function CanvasNode({ data, selected, id }: NodeProps<CanvasNodeData>) {
                   className="nodrag text-[14px] font-bold text-white w-full bg-transparent outline-none border-b border-blue-500 pb-0.5 mt-0.5"
                 />
               ) : (
-                <div className="text-[14px] font-bold text-gray-100 truncate mt-0.5" title={data.label}>
+                <div className="text-[14px] font-bold text-white truncate leading-tight mt-0.5" title={data.label}>
                   {data.label}
                 </div>
               )}
@@ -184,51 +168,50 @@ function CanvasNode({ data, selected, id }: NodeProps<CanvasNodeData>) {
           </div>
           
           <div 
-            className="w-2.5 h-2.5 rounded-full shrink-0 shadow-inner"
+            className="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm mt-1"
             title={data.status}
             style={{ 
               background: statusConfig.color, 
-              boxShadow: `0 0 10px ${statusConfig.color}88, inset 0 2px 4px rgba(255,255,255,0.3)` 
+              boxShadow: `0 0 8px ${statusConfig.color}88` 
             }}
           />
         </div>
 
         {/* Route / Path Display */}
         {(data.routePath || data.filePath) && (
-          <div className="text-[11px] font-mono text-gray-400 bg-black/40 px-2 py-1.5 rounded border border-white/5 truncate mb-3">
+          <div className="text-[10px] font-mono text-gray-400 bg-black/40 px-2 py-1.5 rounded border border-white/5 truncate">
             {data.routePath || data.filePath}
           </div>
         )}
 
-        {/* Badges / Meta Info */}
-        <div className="flex flex-wrap gap-2 mt-auto">
+        {/* Metadata Badges */}
+        <div className="flex flex-wrap gap-1.5 mt-auto pt-1">
           {pendingTasks.length > 0 && (
-            <div className="flex items-center gap-1 bg-amber-500/10 text-amber-400 text-[10px] font-semibold px-2 py-1 rounded border border-amber-500/20">
-              <svg viewBox="0 0 16 16" fill="none" width="10" height="10"><path d="M2.5 8L6 11.5L13.5 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            <div className="flex items-center gap-1 bg-amber-500/10 text-amber-400 text-[10px] font-bold px-1.5 py-0.5 rounded border border-amber-500/20">
+              <div className="w-1 h-1 rounded-full bg-amber-400 animate-pulse" />
               {pendingTasks.length} Task{pendingTasks.length > 1 ? 's' : ''}
             </div>
           )}
           
           {openBugs.length > 0 && (
-            <div className="flex items-center gap-1 bg-red-500/10 text-red-400 text-[10px] font-semibold px-2 py-1 rounded border border-red-500/20">
-              <svg viewBox="0 0 16 16" fill="currentColor" width="10" height="10"><path fillRule="evenodd" d="M8 2a3 3 0 00-3 3v1H4a1 1 0 000 2h1v1H4a1 1 0 100 2h1v1a3 3 0 003 3h0a3 3 0 003-3v-1h1a1 1 0 100-2h-1v-1h1a1 1 0 100-2h-1V5a3 3 0 00-3-3z" clipRule="evenodd"/></svg>
+            <div className="flex items-center gap-1 bg-red-500/10 text-red-400 text-[10px] font-bold px-1.5 py-0.5 rounded border border-red-500/20">
+              <div className="w-1 h-1 rounded-full bg-red-400 animate-pulse" />
               {openBugs.length} Bug{openBugs.length > 1 ? 's' : ''}
             </div>
           )}
 
           {hasPrompt && (
-            <div className="flex items-center gap-1 bg-blue-500/10 text-blue-400 text-[10px] font-semibold px-2 py-1 rounded border border-blue-500/20 ml-auto">
-              <svg viewBox="0 0 16 16" fill="none" width="10" height="10"><path d="M2 13.5L4.5 11M14 2 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><rect x="6" y="2" width="8" height="6" rx="1" stroke="currentColor" strokeWidth="2"/></svg>
+            <div className="flex items-center gap-1 bg-blue-500/10 text-blue-400 text-[10px] font-bold px-1.5 py-0.5 rounded border border-blue-500/20 ml-auto">
               Agent
             </div>
           )}
         </div>
       </div>
 
-      <Handle type="target" position={Position.Top} style={handleStyleActive} />
-      <Handle type="source" position={Position.Bottom} style={handleStyleActive} />
-      <Handle type="source" position={Position.Right} id="right" style={handleStyleActive} />
-      <Handle type="target" position={Position.Left} id="left" style={handleStyleActive} />
+      <Handle type="target" position={Position.Top} className="!w-2.5 !h-2.5 !bg-white !border-2 !border-slate-900" style={{ opacity: showHandles ? 1 : 0 }} />
+      <Handle type="source" position={Position.Bottom} className="!w-2.5 !h-2.5 !bg-white !border-2 !border-slate-900" style={{ opacity: showHandles ? 1 : 0 }} />
+      <Handle type="source" position={Position.Right} id="right" className="!w-2.5 !h-2.5 !bg-white !border-2 !border-slate-900" style={{ opacity: showHandles ? 1 : 0 }} />
+      <Handle type="target" position={Position.Left} id="left" className="!w-2.5 !h-2.5 !bg-white !border-2 !border-slate-900" style={{ opacity: showHandles ? 1 : 0 }} />
     </div>
   );
 }
