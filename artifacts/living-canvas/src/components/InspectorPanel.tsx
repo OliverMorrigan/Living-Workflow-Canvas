@@ -1,8 +1,51 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import type { CanvasNodeData, NodeStatus, Task, Bug } from '../types';
 import { useCanvasStore } from '../store/useCanvasStore';
 import { NODE_TYPE_CONFIGS, STATUS_CONFIGS } from './nodes/nodeConfig';
 import { v4 as uuidv4 } from 'uuid';
+
+function AutoGrowTextarea({
+  value,
+  onChange,
+  placeholder,
+  style,
+  textareaRef,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  style?: React.CSSProperties;
+  textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
+}) {
+  const internalRef = useRef<HTMLTextAreaElement>(null);
+  const ref = textareaRef || internalRef;
+
+  const resize = useCallback(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }, [ref]);
+
+  useEffect(() => {
+    resize();
+  }, [value, resize]);
+
+  return (
+    <textarea
+      ref={ref}
+      value={value}
+      onChange={(e) => { onChange(e.target.value); resize(); }}
+      placeholder={placeholder}
+      rows={1}
+      style={{
+        ...style,
+        overflow: 'hidden',
+        resize: 'none',
+      }}
+    />
+  );
+}
 
 const SECTION_LABEL_STYLE: React.CSSProperties = {
   fontSize: '9px',
@@ -33,8 +76,7 @@ const INPUT_STYLE: React.CSSProperties = {
 
 const TEXTAREA_STYLE: React.CSSProperties = {
   ...INPUT_STYLE,
-  minHeight: '64px',
-  resize: 'vertical',
+  minHeight: '36px',
 };
 
 export default function InspectorPanel() {
@@ -219,11 +261,11 @@ export default function InspectorPanel() {
         {/* Prompt / Intent */}
         <div style={FIELD_STYLE}>
           <div style={SECTION_LABEL_STYLE}>Intenção / Prompt</div>
-          <textarea
-            ref={promptRef}
-            style={{ ...TEXTAREA_STYLE, minHeight: '72px', fontSize: '12px' }}
+          <AutoGrowTextarea
+            textareaRef={promptRef as React.RefObject<HTMLTextAreaElement | null>}
+            style={{ ...TEXTAREA_STYLE, minHeight: '48px', fontSize: '12px' }}
             value={data.prompt || ''}
-            onChange={(e) => update({ prompt: e.target.value })}
+            onChange={(v) => update({ prompt: v })}
             placeholder="O que deve acontecer neste nó? Descreva a intenção para um agente..."
           />
         </div>
@@ -231,10 +273,10 @@ export default function InspectorPanel() {
         {/* Notes */}
         <div style={FIELD_STYLE}>
           <div style={SECTION_LABEL_STYLE}>Notas</div>
-          <textarea
-            style={{ ...TEXTAREA_STYLE, minHeight: '56px' }}
+          <AutoGrowTextarea
+            style={{ ...TEXTAREA_STYLE, minHeight: '40px' }}
             value={data.notes || ''}
-            onChange={(e) => update({ notes: e.target.value })}
+            onChange={(v) => update({ notes: v })}
             placeholder="Notas livres, observações, dependências..."
           />
         </div>
@@ -242,10 +284,10 @@ export default function InspectorPanel() {
         {/* Description */}
         <div style={FIELD_STYLE}>
           <div style={SECTION_LABEL_STYLE}>Descrição</div>
-          <textarea
-            style={{ ...TEXTAREA_STYLE, minHeight: '48px' }}
+          <AutoGrowTextarea
+            style={{ ...TEXTAREA_STYLE, minHeight: '36px' }}
             value={data.description || ''}
-            onChange={(e) => update({ description: e.target.value })}
+            onChange={(v) => update({ description: v })}
             placeholder="O que este nó faz?"
           />
         </div>

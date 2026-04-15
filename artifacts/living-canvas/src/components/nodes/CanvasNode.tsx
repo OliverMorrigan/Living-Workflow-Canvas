@@ -81,9 +81,6 @@ function CanvasNode({ data, selected }: NodeProps<CanvasNodeData>) {
     (data.bugs && data.bugs.length > 0)
   );
 
-  const openBugs = data.bugs?.filter((b) => !b.resolved).length || 0;
-  const pendingTasks = data.tasks?.filter((t) => !t.done).length || 0;
-
   const sideBorderColor = selected ? typeConfig.accentColor : '#252830';
 
   return (
@@ -159,41 +156,6 @@ function CanvasNode({ data, selected }: NodeProps<CanvasNodeData>) {
           />
         </div>
       </div>
-
-      {(openBugs > 0 || pendingTasks > 0) && (
-        <div style={{ display: 'flex', gap: '4px', marginTop: '5px' }}>
-          {openBugs > 0 && (
-            <span
-              style={{
-                fontSize: '8px',
-                color: '#9b5050',
-                background: '#2a1a1a',
-                borderRadius: '3px',
-                padding: '1px 4px',
-                fontFamily: 'monospace',
-                fontWeight: 600,
-              }}
-            >
-              {openBugs} bug{openBugs > 1 ? 's' : ''}
-            </span>
-          )}
-          {pendingTasks > 0 && (
-            <span
-              style={{
-                fontSize: '8px',
-                color: '#3d5a80',
-                background: '#151e2a',
-                borderRadius: '3px',
-                padding: '1px 4px',
-                fontFamily: 'monospace',
-                fontWeight: 600,
-              }}
-            >
-              {pendingTasks}t
-            </span>
-          )}
-        </div>
-      )}
 
       <Handle type="source" position={Position.Bottom} style={HANDLE_STYLE} />
       <Handle type="source" position={Position.Right} id="right" style={HANDLE_STYLE} />

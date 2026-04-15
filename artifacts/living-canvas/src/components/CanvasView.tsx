@@ -143,15 +143,15 @@ export default function CanvasView() {
         </div>
       )}
 
-      {/* Shortcuts legend */}
+      {/* Shortcuts legend — bottom-left, below zoom controls */}
       <div
         style={{
           position: 'absolute',
-          bottom: 16,
-          left: '50%',
-          transform: 'translateX(-50%)',
+          bottom: 100,
+          left: 16,
           display: 'flex',
-          gap: '10px',
+          flexDirection: 'column',
+          gap: '4px',
           pointerEvents: 'none',
           zIndex: 5,
         }}
