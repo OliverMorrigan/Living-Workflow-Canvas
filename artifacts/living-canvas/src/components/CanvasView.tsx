@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import {
   ReactFlow,
   Background,
@@ -6,6 +6,7 @@ import {
   MiniMap,
   applyNodeChanges,
   applyEdgeChanges,
+  useReactFlow,
   type Connection,
   type Node,
   type Edge,
@@ -30,6 +31,33 @@ const defaultEdgeOptions = {
   markerEnd: { type: MarkerType.ArrowClosed, width: 10, height: 10, color: '#323844' },
   data: { relation: 'navigates-to', label: 'navigates to' },
 };
+
+function FlowController() {
+  const { fitView, setViewport, getViewport } = useReactFlow();
+  const { nodes } = useCanvasStore();
+
+  useEffect(() => {
+    const onFitView = () => fitView({ padding: 0.15, duration: 350 });
+    const onZoomReset = () => setViewport({ x: getViewport().x, y: getViewport().y, zoom: 1 }, { duration: 250 });
+    const onFocusNode = (e: CustomEvent) => {
+      const node = nodes.find((n) => n.id === e.detail?.id);
+      if (node) {
+        fitView({ nodes: [{ id: node.id }], padding: 0.5, duration: 350 });
+      }
+    };
+
+    window.addEventListener('flow:fitView', onFitView);
+    window.addEventListener('flow:zoomReset', onZoomReset);
+    window.addEventListener('flow:focusNode', onFocusNode as EventListener);
+    return () => {
+      window.removeEventListener('flow:fitView', onFitView);
+      window.removeEventListener('flow:zoomReset', onZoomReset);
+      window.removeEventListener('flow:focusNode', onFocusNode as EventListener);
+    };
+  }, [fitView, setViewport, getViewport, nodes]);
+
+  return null;
+}
 
 export default function CanvasView() {
   const {
@@ -76,15 +104,11 @@ export default function CanvasView() {
   );
 
   const onNodeClick = useCallback(
-    (_event: React.MouseEvent, node: Node) => {
-      setSelectedNodeId(node.id);
-    },
+    (_event: React.MouseEvent, node: Node) => setSelectedNodeId(node.id),
     [setSelectedNodeId]
   );
 
-  const onPaneClick = useCallback(() => {
-    setSelectedNodeId(null);
-  }, [setSelectedNodeId]);
+  const onPaneClick = useCallback(() => setSelectedNodeId(null), [setSelectedNodeId]);
 
   return (
     <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
@@ -101,11 +125,16 @@ export default function CanvasView() {
         defaultEdgeOptions={defaultEdgeOptions as object}
         fitView
         fitViewOptions={{ padding: 0.15 }}
-        minZoom={0.15}
-        maxZoom={2.5}
+        minZoom={0.1}
+        maxZoom={3}
         style={{ background: 'transparent' }}
         proOptions={{ hideAttribution: true }}
+        elevateEdgesOnSelect
+        selectionOnDrag
+        panOnDrag={[1, 2]}
+        selectionMode={'partial' as never}
       >
+        <FlowController />
         <Background
           variant={BackgroundVariant.Dots}
           gap={24}
@@ -135,15 +164,19 @@ export default function CanvasView() {
             pointerEvents: 'none',
           }}
         >
-          <div style={{ fontSize: '32px', marginBottom: '10px', opacity: 0.08 }}>◈</div>
+          <div style={{ fontSize: '40px', marginBottom: '12px', opacity: 0.06 }}>◈</div>
           <div style={{ fontSize: '12px', color: '#252830', fontFamily: 'monospace' }}>Canvas vazio</div>
-          <div style={{ fontSize: '10px', color: '#1e2128', marginTop: '4px', fontFamily: 'monospace' }}>
-            Use a paleta à esquerda · Pressione <kbd style={{ background: '#1a1d23', border: '1px solid #252830', borderRadius: '2px', padding: '0 4px', fontSize: '9px' }}>N</kbd> para adicionar
+          <div style={{ fontSize: '10px', color: '#1e2128', marginTop: '6px', fontFamily: 'monospace' }}>
+            Pressione{' '}
+            <kbd style={{ background: '#1a1d23', border: '1px solid #252830', borderRadius: '2px', padding: '0 4px' }}>N</kbd>
+            {' '}para adicionar um nó ·{' '}
+            <kbd style={{ background: '#1a1d23', border: '1px solid #252830', borderRadius: '2px', padding: '0 4px' }}>⌘K</kbd>
+            {' '}para buscar
           </div>
         </div>
       )}
 
-      {/* Shortcuts legend — bottom-left, below zoom controls */}
+      {/* Shortcuts legend — bottom-left, stacked above zoom controls */}
       <div
         style={{
           position: 'absolute',
@@ -157,13 +190,13 @@ export default function CanvasView() {
         }}
       >
         {[
+          ['⌘K', 'Command Bar'],
           ['N', 'Novo nó'],
           ['Del', 'Remover'],
-          ['Esc', 'Deselecionar'],
-          ['/', 'Focar prompt'],
-          ['⌘S', 'Snapshot'],
+          ['F', 'Fit view'],
+          ['⌘Z', 'Desfazer'],
         ].map(([key, label]) => (
-          <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
             <kbd
               style={{
                 background: '#13151a',
@@ -173,6 +206,8 @@ export default function CanvasView() {
                 fontSize: '8px',
                 fontFamily: 'monospace',
                 color: '#2e3340',
+                minWidth: '24px',
+                textAlign: 'center',
               }}
             >
               {key}
@@ -182,7 +217,7 @@ export default function CanvasView() {
         ))}
       </div>
 
-      {/* Counter badge */}
+      {/* Selection indicator */}
       {selectedNodeId && (
         <div
           style={{
@@ -199,12 +234,17 @@ export default function CanvasView() {
             color: '#3d4455',
             pointerEvents: 'none',
             zIndex: 5,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
           }}
         >
           <span style={{ color: '#6b7280' }}>
             {(nodes.find((n) => n.id === selectedNodeId)?.data as CanvasNodeData)?.label}
           </span>
-          {' '}selecionado
+          <span>selecionado</span>
+          <span style={{ color: '#252830' }}>·</span>
+          <span>duplo-clique para editar</span>
         </div>
       )}
     </div>

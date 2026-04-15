@@ -6,6 +6,7 @@ import CanvasView from './components/CanvasView';
 import InspectorPanel from './components/InspectorPanel';
 import SnapshotPanel from './components/SnapshotPanel';
 import PlanPanel from './components/PlanPanel';
+import CommandBar from './components/CommandBar';
 import { useCanvasStore } from './store/useCanvasStore';
 import type { NodeType } from './types';
 import { NODE_TYPE_CONFIGS } from './components/nodes/nodeConfig';
@@ -34,24 +35,22 @@ function TypePickerOverlay({ onSelect, onClose }: { onSelect: (type: NodeType) =
           border: '1px solid #252830',
           borderRadius: '6px',
           padding: '8px 0',
-          minWidth: '180px',
+          minWidth: '200px',
           boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div
-          style={{
-            padding: '4px 12px 8px',
-            fontSize: '8px',
-            fontFamily: 'monospace',
-            color: '#2e3340',
-            textTransform: 'uppercase',
-            letterSpacing: '0.1em',
-            borderBottom: '1px solid #1e2128',
-            marginBottom: '4px',
-          }}
-        >
-          Adicionar nó — pressione 1–9
+        <div style={{
+          padding: '4px 12px 8px',
+          fontSize: '8px',
+          fontFamily: 'monospace',
+          color: '#2e3340',
+          textTransform: 'uppercase',
+          letterSpacing: '0.1em',
+          borderBottom: '1px solid #1e2128',
+          marginBottom: '4px',
+        }}>
+          Tipo do nó — pressione 1–9
         </div>
         {NODE_TYPES_LIST.map((type, i) => {
           const config = NODE_TYPE_CONFIGS[type];
@@ -68,34 +67,13 @@ function TypePickerOverlay({ onSelect, onClose }: { onSelect: (type: NodeType) =
                 background: 'transparent',
                 border: 'none',
                 cursor: 'pointer',
-                textAlign: 'left',
               }}
               onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#1a1d23'; }}
               onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
             >
-              <span
-                style={{
-                  fontSize: '8px',
-                  fontFamily: 'monospace',
-                  color: '#252830',
-                  width: '12px',
-                  flexShrink: 0,
-                }}
-              >
-                {i + 1}
-              </span>
-              <div
-                style={{
-                  width: 7,
-                  height: 7,
-                  borderRadius: '50%',
-                  background: config.accentColor,
-                  flexShrink: 0,
-                }}
-              />
-              <span style={{ fontSize: '11px', fontFamily: 'monospace', color: '#6b7280' }}>
-                {config.label}
-              </span>
+              <span style={{ fontSize: '8px', fontFamily: 'monospace', color: '#252830', width: '12px', flexShrink: 0 }}>{i + 1}</span>
+              <div style={{ width: 7, height: 7, borderRadius: '50%', background: config.accentColor, flexShrink: 0 }} />
+              <span style={{ fontSize: '11px', fontFamily: 'monospace', color: '#6b7280' }}>{config.label}</span>
             </button>
           );
         })}
@@ -116,8 +94,13 @@ function AppContent() {
     setGeneratedPlan,
     setPlanPanelOpen,
     setGeneratingPlan,
-    isGeneratingPlan,
     isInspectorOpen,
+    isCommandBarOpen,
+    setCommandBarOpen,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
   } = useCanvasStore();
 
   const [showTypePicker, setShowTypePicker] = useState(false);
@@ -166,12 +149,23 @@ function AppContent() {
       const target = e.target as HTMLElement;
       const isInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
 
+      // ⌘K — Command Bar (always, even in inputs)
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setCommandBarOpen(!isCommandBarOpen);
+        return;
+      }
+
+      // Close command bar
+      if (isCommandBarOpen && e.key === 'Escape') {
+        e.preventDefault();
+        setCommandBarOpen(false);
+        return;
+      }
+
+      // Type picker shortcuts
       if (showTypePicker) {
-        if (e.key === 'Escape') {
-          e.preventDefault();
-          setShowTypePicker(false);
-          return;
-        }
+        if (e.key === 'Escape') { e.preventDefault(); setShowTypePicker(false); return; }
         const idx = parseInt(e.key, 10) - 1;
         if (!isNaN(idx) && idx >= 0 && idx < NODE_TYPES_LIST.length) {
           e.preventDefault();
@@ -183,31 +177,61 @@ function AppContent() {
 
       if (isInput) return;
 
+      // Undo / Redo
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'z') {
+        e.preventDefault();
+        if (canRedo()) redo();
+        return;
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
+        e.preventDefault();
+        if (canUndo()) undo();
+        return;
+      }
+
+      // N — add node
       if (e.key === 'n' || e.key === 'N') {
         e.preventDefault();
         setShowTypePicker(true);
         return;
       }
 
+      // Esc — deselect
       if (e.key === 'Escape') {
         e.preventDefault();
         setSelectedNodeId(null);
-        setShowTypePicker(false);
         return;
       }
 
+      // Del / Backspace — remove selected node
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedNodeId) {
         e.preventDefault();
         removeNode(selectedNodeId);
         return;
       }
 
+      // / — focus prompt in inspector
       if (e.key === '/' && selectedNodeId && isInspectorOpen) {
         e.preventDefault();
         window.dispatchEvent(new CustomEvent('focus-prompt'));
         return;
       }
 
+      // F — fit view
+      if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
+        window.dispatchEvent(new CustomEvent('flow:fitView'));
+        return;
+      }
+
+      // 0 — zoom 100%
+      if (e.key === '0') {
+        e.preventDefault();
+        window.dispatchEvent(new CustomEvent('flow:zoomReset'));
+        return;
+      }
+
+      // ⌘S — auto snapshot
       if ((e.metaKey || e.ctrlKey) && e.key === 's') {
         e.preventDefault();
         handleAutoSnapshot();
@@ -217,7 +241,21 @@ function AppContent() {
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [showTypePicker, selectedNodeId, isInspectorOpen, addNodeOfType, removeNode, setSelectedNodeId, handleAutoSnapshot]);
+  }, [
+    showTypePicker,
+    selectedNodeId,
+    isInspectorOpen,
+    isCommandBarOpen,
+    addNodeOfType,
+    removeNode,
+    setSelectedNodeId,
+    handleAutoSnapshot,
+    setCommandBarOpen,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+  ]);
 
   const handleGeneratePlan = async () => {
     setGeneratingPlan(true);
@@ -226,7 +264,7 @@ function AppContent() {
 
     await new Promise((r) => setTimeout(r, 1200));
 
-    const plan = generateFullCanvasPlan(nodes, edges, selectedNodeId);
+    const plan = generateCanvasPlan(nodes, edges, selectedNodeId);
     setGeneratedPlan(plan);
     setGeneratingPlan(false);
   };
@@ -248,6 +286,7 @@ function AppContent() {
           onClose={() => setShowTypePicker(false)}
         />
       )}
+      <CommandBar />
       <Toolbar onGeneratePlan={handleGeneratePlan} />
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
         <LeftPalette />
@@ -268,7 +307,7 @@ export default function App() {
   );
 }
 
-function generateFullCanvasPlan(
+function generateCanvasPlan(
   nodes: ReturnType<typeof useCanvasStore.getState>['nodes'],
   edges: ReturnType<typeof useCanvasStore.getState>['edges'],
   selectedNodeId: string | null
@@ -284,11 +323,11 @@ function generateFullCanvasPlan(
   lines.push('');
   lines.push(`**Gerado em:** ${dateStr} às ${timeStr}`);
   lines.push(`**Escopo:** ${focusNode ? `Nó: ${focusNode.data.label}` : 'Canvas completo'}`);
-  lines.push(`**Estado:** ${nodes.length} nós, ${edges.length} conexões`);
+  lines.push(`**Estado:** ${nodes.length} nós · ${edges.length} conexões`);
   lines.push('');
 
-  const inProgress = nodes.filter((n) => n.data.status === 'in-progress');
   const broken = nodes.filter((n) => n.data.status === 'broken');
+  const inProgress = nodes.filter((n) => n.data.status === 'in-progress');
   const planned = nodes.filter((n) => n.data.status === 'planned');
   const allBugs = nodes.flatMap((n) =>
     (n.data.bugs || []).filter((b) => !b.resolved).map((b) => ({ ...b, node: n.data.label }))
@@ -296,14 +335,14 @@ function generateFullCanvasPlan(
   const allTasks = nodes.flatMap((n) =>
     (n.data.tasks || []).filter((t) => !t.done).map((t) => ({ ...t, node: n.data.label }))
   );
-  const allPrompts = nodes.filter((n) => n.data.prompt);
 
   if (broken.length > 0) {
     lines.push('## Crítico — Nós Quebrados');
     broken.forEach((n) => {
       lines.push(`- **${n.data.label}** (\`${n.data.routePath || n.data.type}\`)`);
-      const nodeBugs = (n.data.bugs || []).filter((b) => !b.resolved);
-      nodeBugs.forEach((b) => lines.push(`  - [${b.severity.toUpperCase()}] ${b.text}`));
+      (n.data.bugs || []).filter((b) => !b.resolved).forEach((b) =>
+        lines.push(`  - [${b.severity.toUpperCase()}] ${b.text}`)
+      );
     });
     lines.push('');
   }
@@ -322,14 +361,14 @@ function generateFullCanvasPlan(
     lines.push('## Planejado');
     planned.forEach((n) => {
       lines.push(`- **${n.data.label}** (\`${n.data.routePath || n.data.type}\`)`);
-      if (n.data.description) lines.push(`  ${n.data.description}`);
     });
     lines.push('');
   }
 
-  if (allPrompts.length > 0) {
+  const withPrompts = nodes.filter((n) => n.data.prompt);
+  if (withPrompts.length > 0) {
     lines.push('## Intenções por Nó');
-    allPrompts.forEach((n) => {
+    withPrompts.forEach((n) => {
       lines.push(`### ${n.data.label}`);
       lines.push(n.data.prompt || '');
       lines.push('');
@@ -340,9 +379,8 @@ function generateFullCanvasPlan(
   lines.push('');
   const typeGroups: Record<string, string[]> = {};
   nodes.forEach((n) => {
-    const type = n.data.type;
-    if (!typeGroups[type]) typeGroups[type] = [];
-    typeGroups[type].push(n.data.label);
+    if (!typeGroups[n.data.type]) typeGroups[n.data.type] = [];
+    typeGroups[n.data.type].push(n.data.label);
   });
   Object.entries(typeGroups).forEach(([type, labels]) => {
     lines.push(`**${type.charAt(0).toUpperCase() + type.slice(1)}s:** ${labels.join(', ')}`);
@@ -360,12 +398,8 @@ function generateFullCanvasPlan(
 
   if (allBugs.length > 0) {
     lines.push('## Bugs Abertos');
-    const high = allBugs.filter((b) => b.severity === 'high');
-    const med = allBugs.filter((b) => b.severity === 'medium');
-    const low = allBugs.filter((b) => b.severity === 'low');
-    [...high, ...med, ...low].forEach((b) => {
-      lines.push(`- [${b.severity.toUpperCase()}] **${b.node}**: ${b.text}`);
-    });
+    const sorted = [...allBugs.filter((b) => b.severity === 'high'), ...allBugs.filter((b) => b.severity === 'medium'), ...allBugs.filter((b) => b.severity === 'low')];
+    sorted.forEach((b) => lines.push(`- [${b.severity.toUpperCase()}] **${b.node}**: ${b.text}`));
     lines.push('');
   }
 
@@ -377,16 +411,12 @@ function generateFullCanvasPlan(
 
   lines.push('## Instruções para o Agente');
   lines.push('');
-  lines.push('Este plano foi gerado a partir de um snapshot do Living Canvas. Ao implementar:');
+  lines.push('1. **Comece pelos nós quebrados** — prioridade máxima');
+  lines.push('2. **Siga as conexões** — mudanças se propagam pelas arestas');
+  lines.push('3. **Respeite as intenções** — cada nó tem seu prompt/intenção declarada');
+  lines.push('4. **Snapshot após cada mudança** — registre o progresso');
   lines.push('');
-  lines.push('1. **Comece pelos nós quebrados** — resolva problemas críticos antes de novas features');
-  lines.push('2. **Siga o mapa de conexões** — mudanças se propagam pelas arestas');
-  lines.push('3. **Respeite as intenções por nó** — cada nó tem seu prompt/intenção declarada');
-  lines.push('4. **Valide nós planejados** — confirme rotas e arquivos antes de criar');
-  lines.push('5. **Tire um novo snapshot** após cada mudança significativa');
-  lines.push('');
-  lines.push('> Gerado pelo Living Software Canvas. Reflete intenção, não código real.');
-  lines.push('> Sempre valide contra o codebase atual antes de implementar.');
+  lines.push('> Gerado pelo Living Software Canvas. Valide contra o codebase antes de implementar.');
 
   return lines.join('\n');
 }
