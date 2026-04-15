@@ -19,6 +19,7 @@ import CanvasNode from './nodes/CanvasNode';
 import CanvasEdge from './nodes/CanvasEdge';
 import { useCanvasStore } from '../store/useCanvasStore';
 import type { CanvasNodeData, CanvasEdgeData } from '../types';
+import { NODE_TYPE_CONFIGS } from './nodes/nodeConfig';
 import { v4 as uuidv4 } from 'uuid';
 
 const nodeTypes = { canvasNode: CanvasNode };
@@ -26,7 +27,7 @@ const edgeTypes = { canvasEdge: CanvasEdge };
 
 const defaultEdgeOptions = {
   type: 'canvasEdge',
-  markerEnd: { type: MarkerType.ArrowClosed, width: 12, height: 12, color: '#60a5fa' },
+  markerEnd: { type: MarkerType.ArrowClosed, width: 10, height: 10, color: '#323844' },
   data: { relation: 'navigates-to', label: 'navigates to' },
 };
 
@@ -66,7 +67,7 @@ export default function CanvasView() {
         sourceHandle: connection.sourceHandle ?? undefined,
         targetHandle: connection.targetHandle ?? undefined,
         type: 'canvasEdge',
-        markerEnd: { type: MarkerType.ArrowClosed, width: 12, height: 12 },
+        markerEnd: { type: MarkerType.ArrowClosed, width: 10, height: 10, color: '#323844' },
         data: { relation: 'navigates-to', label: 'navigates to' },
       };
       storeAddEdge(newEdge);
@@ -99,45 +100,30 @@ export default function CanvasView() {
         edgeTypes={edgeTypes}
         defaultEdgeOptions={defaultEdgeOptions as object}
         fitView
-        fitViewOptions={{ padding: 0.2 }}
-        minZoom={0.2}
-        maxZoom={2}
+        fitViewOptions={{ padding: 0.15 }}
+        minZoom={0.15}
+        maxZoom={2.5}
         style={{ background: 'transparent' }}
         proOptions={{ hideAttribution: true }}
       >
         <Background
           variant={BackgroundVariant.Dots}
-          gap={20}
+          gap={24}
           size={1}
-          color="rgba(148,163,184,0.08)"
-          style={{ background: 'hsl(222 20% 7%)' }}
+          color="#1e2128"
+          style={{ background: '#111216' }}
         />
-        <Controls
-          style={{ bottom: 20, left: 20 }}
-          showInteractive={false}
-        />
+        <Controls style={{ bottom: 16, left: 16 }} showInteractive={false} />
         <MiniMap
-          style={{ bottom: 20, right: 20 }}
-          maskColor="rgba(10, 15, 25, 0.7)"
+          style={{ bottom: 16, right: 16, background: '#131518' }}
+          maskColor="rgba(10,12,18,0.75)"
           nodeColor={(node: Node) => {
-            const colors: Record<string, string> = {
-              page: '#3b82f6',
-              route: '#34d399',
-              component: '#a78bfa',
-              api: '#f59e0b',
-              auth: '#f87171',
-              middleware: '#22d3ee',
-              database: '#fb7185',
-              gateway: '#fb923c',
-              'ui-action': '#2dd4bf',
-            };
             const data = node.data as CanvasNodeData;
-            return colors[data.type] || '#60a5fa';
+            return NODE_TYPE_CONFIGS[data.type]?.accentColor || '#3b82f6';
           }}
         />
       </ReactFlow>
 
-      {/* Empty canvas hint */}
       {nodes.length === 0 && (
         <div
           style={{
@@ -149,40 +135,78 @@ export default function CanvasView() {
             pointerEvents: 'none',
           }}
         >
-          <div style={{ fontSize: '48px', marginBottom: '12px', opacity: 0.2 }}>◈</div>
-          <div style={{ fontSize: '14px', color: '#334155' }}>Canvas is empty</div>
-          <div style={{ fontSize: '11px', color: '#1e293b', marginTop: '4px' }}>
-            Use the palette on the left to add nodes
+          <div style={{ fontSize: '32px', marginBottom: '10px', opacity: 0.08 }}>◈</div>
+          <div style={{ fontSize: '12px', color: '#252830', fontFamily: 'monospace' }}>Canvas vazio</div>
+          <div style={{ fontSize: '10px', color: '#1e2128', marginTop: '4px', fontFamily: 'monospace' }}>
+            Use a paleta à esquerda · Pressione <kbd style={{ background: '#1a1d23', border: '1px solid #252830', borderRadius: '2px', padding: '0 4px', fontSize: '9px' }}>N</kbd> para adicionar
           </div>
         </div>
       )}
 
-      {/* Node counter overlay */}
+      {/* Shortcuts legend */}
       <div
         style={{
           position: 'absolute',
-          top: '12px',
+          bottom: 16,
           left: '50%',
           transform: 'translateX(-50%)',
-          background: 'rgba(15,20,30,0.7)',
-          border: '1px solid hsl(220 14% 16%)',
-          borderRadius: '20px',
-          padding: '4px 12px',
-          fontSize: '10px',
-          fontFamily: 'monospace',
-          color: '#475569',
-          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          gap: '10px',
           pointerEvents: 'none',
           zIndex: 5,
         }}
       >
-        {nodes.length} nodes · {edges.length} edges
-        {selectedNodeId && (
-          <span style={{ color: '#60a5fa', marginLeft: '8px' }}>
-            · {(nodes.find((n) => n.id === selectedNodeId)?.data as CanvasNodeData)?.label} selected
-          </span>
-        )}
+        {[
+          ['N', 'Novo nó'],
+          ['Del', 'Remover'],
+          ['Esc', 'Deselecionar'],
+          ['/', 'Focar prompt'],
+          ['⌘S', 'Snapshot'],
+        ].map(([key, label]) => (
+          <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <kbd
+              style={{
+                background: '#13151a',
+                border: '1px solid #1e2128',
+                borderRadius: '3px',
+                padding: '1px 5px',
+                fontSize: '8px',
+                fontFamily: 'monospace',
+                color: '#2e3340',
+              }}
+            >
+              {key}
+            </kbd>
+            <span style={{ fontSize: '8px', color: '#1e2128', fontFamily: 'monospace' }}>{label}</span>
+          </div>
+        ))}
       </div>
+
+      {/* Counter badge */}
+      {selectedNodeId && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '10px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: '#13151a',
+            border: '1px solid #1e2128',
+            borderRadius: '4px',
+            padding: '3px 10px',
+            fontSize: '9px',
+            fontFamily: 'monospace',
+            color: '#3d4455',
+            pointerEvents: 'none',
+            zIndex: 5,
+          }}
+        >
+          <span style={{ color: '#6b7280' }}>
+            {(nodes.find((n) => n.id === selectedNodeId)?.data as CanvasNodeData)?.label}
+          </span>
+          {' '}selecionado
+        </div>
+      )}
     </div>
   );
 }

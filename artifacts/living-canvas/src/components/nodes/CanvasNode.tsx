@@ -53,7 +53,6 @@ const NODE_TYPE_ICONS: Record<string, React.ReactNode> = {
   gateway: (
     <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" width="13" height="13">
       <path d="M8 2L14 5.5V10.5L8 14L2 10.5V5.5L8 2Z" stroke="currentColor" strokeWidth="1.3"/>
-      <path d="M8 2V14M2 5.5L14 5.5M2 10.5L14 10.5" stroke="currentColor" strokeWidth="1" strokeOpacity="0.5"/>
     </svg>
   ),
   'ui-action': (
@@ -64,65 +63,57 @@ const NODE_TYPE_ICONS: Record<string, React.ReactNode> = {
   ),
 };
 
+const HANDLE_STYLE = {
+  background: '#2e3340',
+  width: 7,
+  height: 7,
+  border: '1px solid #3a3f4a',
+};
+
 function CanvasNode({ data, selected }: NodeProps<CanvasNodeData>) {
   const typeConfig = NODE_TYPE_CONFIGS[data.type] || NODE_TYPE_CONFIGS.page;
   const statusConfig = STATUS_CONFIGS[data.status] || STATUS_CONFIGS.stable;
 
-  const bugCount = data.bugs?.filter((b) => !b.resolved).length || 0;
-  const taskCount = data.tasks?.filter((t) => !t.done).length || 0;
+  const hasContent = !!(
+    data.notes ||
+    data.prompt ||
+    (data.tasks && data.tasks.length > 0) ||
+    (data.bugs && data.bugs.length > 0)
+  );
+
+  const openBugs = data.bugs?.filter((b) => !b.resolved).length || 0;
+  const pendingTasks = data.tasks?.filter((t) => !t.done).length || 0;
+
+  const sideBorderColor = selected ? typeConfig.accentColor : '#252830';
 
   return (
     <div
-      className="canvas-node-enter"
       style={{
-        background: typeConfig.bgColor,
-        border: `1px solid ${selected ? '#3b82f6' : typeConfig.borderColor}`,
-        borderRadius: '10px',
-        minWidth: '170px',
-        maxWidth: '210px',
-        padding: '10px 12px',
+        background: '#1a1d23',
+        borderTop: `1px solid ${sideBorderColor}`,
+        borderRight: `1px solid ${sideBorderColor}`,
+        borderBottom: `1px solid ${sideBorderColor}`,
+        borderLeft: `3px solid ${typeConfig.accentColor}`,
+        borderRadius: '5px',
+        width: '168px',
+        padding: '8px 10px 7px 8px',
         cursor: 'pointer',
-        boxShadow: selected
-          ? '0 0 0 2px rgba(59,130,246,0.5), 0 4px 24px rgba(0,0,0,0.5)'
-          : '0 2px 12px rgba(0,0,0,0.3)',
-        backdropFilter: 'blur(8px)',
-        transition: 'box-shadow 0.15s, border-color 0.15s',
         position: 'relative',
       }}
     >
-      <Handle
-        type="target"
-        position={Position.Top}
-        style={{
-          background: typeConfig.color,
-          width: 8,
-          height: 8,
-          border: '2px solid rgba(0,0,0,0.6)',
-        }}
-      />
+      <Handle type="target" position={Position.Top} style={HANDLE_STYLE} />
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '6px' }}>
-        <div
-          style={{
-            color: typeConfig.color,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: 26,
-            height: 26,
-            borderRadius: '6px',
-            background: `${typeConfig.color}22`,
-            flexShrink: 0,
-          }}
-        >
+      <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+        <div style={{ color: '#5a6070', flexShrink: 0, display: 'flex', alignItems: 'center', lineHeight: 0 }}>
           {NODE_TYPE_ICONS[data.type]}
         </div>
-        <div style={{ overflow: 'hidden', flex: 1 }}>
+
+        <div style={{ flex: 1, overflow: 'hidden', minWidth: 0 }}>
           <div
             style={{
               fontSize: '12px',
               fontWeight: 600,
-              color: '#e2e8f0',
+              color: '#dde3ed',
               whiteSpace: 'nowrap',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
@@ -133,116 +124,80 @@ function CanvasNode({ data, selected }: NodeProps<CanvasNodeData>) {
           </div>
           <div
             style={{
-              fontSize: '10px',
-              color: typeConfig.color,
+              fontSize: '9px',
+              color: '#3d4455',
               fontFamily: 'monospace',
               marginTop: '1px',
-              opacity: 0.8,
+              lineHeight: '1.2',
+              textTransform: 'uppercase',
+              letterSpacing: '0.04em',
             }}
           >
-            {NODE_TYPE_CONFIGS[data.type]?.label}
+            {typeConfig.label}
           </div>
         </div>
-      </div>
 
-      {data.routePath && (
-        <div
-          style={{
-            fontSize: '10px',
-            fontFamily: 'monospace',
-            color: '#64748b',
-            background: 'rgba(0,0,0,0.3)',
-            padding: '2px 6px',
-            borderRadius: '4px',
-            marginBottom: '6px',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {data.routePath}
-        </div>
-      )}
-
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '3px', flexShrink: 0 }}>
+          {hasContent && (
+            <div
+              style={{
+                width: 4,
+                height: 4,
+                borderRadius: '50%',
+                background: typeConfig.accentColor,
+                opacity: 0.6,
+              }}
+            />
+          )}
           <div
             style={{
               width: 6,
               height: 6,
               borderRadius: '50%',
               background: statusConfig.color,
-              boxShadow: `0 0 4px ${statusConfig.color}`,
             }}
           />
-          <span style={{ fontSize: '9px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-            {statusConfig.label}
-          </span>
-        </div>
-        <div style={{ display: 'flex', gap: '4px' }}>
-          {bugCount > 0 && (
-            <span
-              style={{
-                fontSize: '9px',
-                background: 'rgba(239,68,68,0.2)',
-                color: '#f87171',
-                borderRadius: '3px',
-                padding: '1px 4px',
-                fontWeight: 600,
-              }}
-            >
-              {bugCount} bug{bugCount > 1 ? 's' : ''}
-            </span>
-          )}
-          {taskCount > 0 && (
-            <span
-              style={{
-                fontSize: '9px',
-                background: 'rgba(59,130,246,0.2)',
-                color: '#60a5fa',
-                borderRadius: '3px',
-                padding: '1px 4px',
-                fontWeight: 600,
-              }}
-            >
-              {taskCount} task{taskCount > 1 ? 's' : ''}
-            </span>
-          )}
         </div>
       </div>
 
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        style={{
-          background: typeConfig.color,
-          width: 8,
-          height: 8,
-          border: '2px solid rgba(0,0,0,0.6)',
-        }}
-      />
-      <Handle
-        type="source"
-        position={Position.Right}
-        id="right"
-        style={{
-          background: typeConfig.color,
-          width: 8,
-          height: 8,
-          border: '2px solid rgba(0,0,0,0.6)',
-        }}
-      />
-      <Handle
-        type="target"
-        position={Position.Left}
-        id="left"
-        style={{
-          background: typeConfig.color,
-          width: 8,
-          height: 8,
-          border: '2px solid rgba(0,0,0,0.6)',
-        }}
-      />
+      {(openBugs > 0 || pendingTasks > 0) && (
+        <div style={{ display: 'flex', gap: '4px', marginTop: '5px' }}>
+          {openBugs > 0 && (
+            <span
+              style={{
+                fontSize: '8px',
+                color: '#9b5050',
+                background: '#2a1a1a',
+                borderRadius: '3px',
+                padding: '1px 4px',
+                fontFamily: 'monospace',
+                fontWeight: 600,
+              }}
+            >
+              {openBugs} bug{openBugs > 1 ? 's' : ''}
+            </span>
+          )}
+          {pendingTasks > 0 && (
+            <span
+              style={{
+                fontSize: '8px',
+                color: '#3d5a80',
+                background: '#151e2a',
+                borderRadius: '3px',
+                padding: '1px 4px',
+                fontFamily: 'monospace',
+                fontWeight: 600,
+              }}
+            >
+              {pendingTasks}t
+            </span>
+          )}
+        </div>
+      )}
+
+      <Handle type="source" position={Position.Bottom} style={HANDLE_STYLE} />
+      <Handle type="source" position={Position.Right} id="right" style={HANDLE_STYLE} />
+      <Handle type="target" position={Position.Left} id="left" style={HANDLE_STYLE} />
     </div>
   );
 }

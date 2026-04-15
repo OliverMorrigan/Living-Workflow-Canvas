@@ -27,12 +27,12 @@ function CanvasEdge({
     targetX,
     targetY,
     targetPosition,
-    borderRadius: 8,
+    borderRadius: 6,
   });
 
   const relation = data?.relation || 'navigates-to';
   const edgeConfig = EDGE_RELATION_CONFIGS[relation] || EDGE_RELATION_CONFIGS['navigates-to'];
-  const color = selected ? '#60a5fa' : edgeConfig.color;
+  const color = selected ? '#60a5fa' : '#323844';
   const label = data?.label || edgeConfig.label;
 
   return (
@@ -42,13 +42,12 @@ function CanvasEdge({
         markerEnd={markerEnd}
         style={{
           stroke: color,
-          strokeWidth: selected ? 2.5 : 1.5,
-          strokeOpacity: selected ? 1 : 0.6,
-          transition: 'stroke 0.15s, stroke-width 0.15s',
+          strokeWidth: selected ? 2 : 1.2,
+          strokeOpacity: 1,
         }}
         id={id}
       />
-      {label && (
+      {selected && label && (
         <EdgeLabelRenderer>
           <div
             style={{
@@ -56,15 +55,13 @@ function CanvasEdge({
               transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
               fontSize: '9px',
               fontFamily: 'monospace',
-              background: 'rgba(15,20,30,0.85)',
-              color: color,
-              border: `1px solid ${color}44`,
-              borderRadius: '4px',
+              background: '#1a1d23',
+              color: '#60a5fa',
+              border: '1px solid #252830',
+              borderRadius: '3px',
               padding: '2px 5px',
               pointerEvents: 'none',
               whiteSpace: 'nowrap',
-              backdropFilter: 'blur(4px)',
-              fontWeight: 500,
               letterSpacing: '0.02em',
             }}
             className="nodrag nopan"
