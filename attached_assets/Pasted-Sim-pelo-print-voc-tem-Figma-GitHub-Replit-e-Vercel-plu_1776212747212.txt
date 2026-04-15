@@ -1,0 +1,254 @@
+Sim, pelo print: você tem **Figma, GitHub, Replit e Vercel** plugados. Dá pra montar um workflow bem forte.
+
+Primeira triagem rápida:
+
+**Não forkaria o n8n como base.**
+n8n é automação pesada. Ele inspira a UX, mas é trambolho pra virar “IDE visual de software”.
+
+Eu faria assim:
+
+**Base principal:** `xyflow/xyflow`
+É o React Flow moderno. Perfeito pra canvas com nós, edges, drag/drop, conexão, zoom, mini-map.
+
+**Inspiração:** `n8n`, `activepieces`, `Flowise/Langflow`
+Só pra roubar conceito de workflow, nó configurável, sidebar, execução e histórico.
+
+**Scanner técnico:** `Graph-It-Live`
+Pra ler o projeto real: páginas, imports, dependências, chamadas.
+
+**IA/chat:** Vercel AI SDK
+Achei nos docs que ele já cobre streaming chat e tool calls, perfeito pra “chat por nó”.
+
+**GitHub:** snapshots/commits/PRs.
+**Vercel:** preview deploy.
+**Replit:** protótipo rápido, mas eu usaria como laboratório, não direto no seu repo principal.
+
+Plano spec-driven:
+
+1. Criar uma **spec JSON** do mapa vivo: nodes, edges, metadata, prompts, anexos, rota, arquivo, estado.
+2. Criar MVP visual com **Next.js + TypeScript + xyflow**.
+3. Cada nó abre um painel/chat lateral.
+4. Salvar snapshots como `workflow-map.snapshot.json`.
+5. Comparar snapshots tipo diff visual.
+6. Integrar scanner do projeto.
+7. Agente lê o mapa e propõe patch.
+8. Patch vira branch/PR no GitHub.
+9. Vercel gera preview.
+
+Na lata: **isso é produto SaaS**, não só ferramenta auxiliar. E é uma ideia muito boa.
+
+O primeiro artefato que eu faria agora é a **spec técnica v0.1** desse “Living Software Workflow Canvas”.
+
+
+
+Fechado. Fiz a “reunião técnica” aqui.
+
+### Veredito do time
+
+**Não usar n8n como base.**
+Bom pra inspiração, ruim pra virar IDE visual. Pesado, genérico demais, ia virar gambiarra premium.
+
+**Base escolhida:**
+**Next.js + TypeScript + xyflow/React Flow + Vercel AI SDK/Gateway + GitHub + Graph-It-Live**
+
+### Discussão rápida do “time”
+
+**Arquiteto Vercel:**
+“Faz em Next.js mesmo. App Router, Route Handlers, Vercel Blob pros anexos, AI SDK/Gateway pro chat e tool calls. Stack casa.”
+
+**Dev Canvas:**
+“Canvas tem que ser xyflow. Nó customizado, edge customizada, painel lateral, mini-map, drag/drop. Não inventa canvas do zero, pelo amor de Deus.”
+
+**Engenheiro de IA:**
+“Cada nó precisa ter contexto próprio: prompt, arquivos, screenshots, regra de negócio, rota, componente, histórico. O agente não deve ‘adivinhar’; ele consulta o nó.”
+
+**Cético chato, necessário:**
+“Não deixem o canvas editar código direto no MVP. Primeiro ele gera plano/patch sugerido. Senão vocês criam uma máquina de quebrar projeto em 4K.”
+
+**Produto:**
+“MVP tem que ser pequeno: visualizar, editar conexões, conversar com nó, salvar snapshot. Só depois mexer no código real.”
+
+### Decisão final
+
+Construir **do zero**, mas roubando peças boas:
+
+* **xyflow** = canvas/workflow visual.
+* **Graph-It-Live** = scanner técnico do codebase.
+* **Vercel AI SDK/Gateway** = chat por nó + tool calls.
+* **Vercel Blob** = anexos, prints, arquivos.
+* **GitHub** = snapshots, branches, PRs.
+* **Vercel Preview** = validar mudança.
+* **Replit** = prototipagem rápida, não fonte final da verdade.
+
+### MVP v0.1
+
+Nome provisório: **Living Software Canvas**
+
+Funções:
+
+1. Importar mapa do projeto Next.js.
+2. Gerar nós:
+
+   * página
+   * rota
+   * componente
+   * API
+   * auth
+   * proxy/middleware
+   * banco
+   * botão/link importante
+3. Conectar nós visualmente.
+4. Cada nó abre um chat lateral.
+5. Cada nó aceita:
+
+   * texto livre
+   * prompt
+   * print
+   * arquivo
+   * bug
+   * regra
+   * trecho de código
+6. Botão **Snapshot** salva o estado.
+7. Botão **Compare** mostra diferença entre snapshots.
+8. Botão **Ask Agent** gera plano de alteração, ainda sem aplicar automaticamente.
+
+Minha recomendação: **não mandar o Replit construir agora.**
+Antes, criar a **spec v0.1**. Senão ele vai fazer um brinquedinho bonito e burro. O monstro precisa nascer com coluna vertebral.
+
+
+Boa. Então o próximo passo é **spec v0.1**, sem Replit ainda.
+
+Estrutura:
+
+**Living Software Canvas — Spec v0.1**
+
+1. **Objetivo**
+
+   * Canvas visual vivo para mapear, conversar e planejar mudanças em projetos Next.js.
+
+2. **Entidades**
+
+   * `Node`: página, rota, componente, API, auth, proxy, banco, botão/link.
+   * `Edge`: navegação, renderização, chamada API, redirect, auth guard, query DB.
+   * `Snapshot`: estado salvo do canvas.
+   * `NodeChat`: conversa/contexto por nó.
+   * `Attachment`: print, arquivo, trecho de código, regra, prompt.
+
+3. **Stack**
+
+   * Next.js App Router
+   * TypeScript
+   * xyflow
+   * Vercel AI SDK/Gateway
+   * Vercel Blob para anexos
+   * GitHub para snapshots/PRs
+   * Graph-It-Live para scanner técnico
+
+4. **Regra de ouro**
+
+   * MVP **não altera código automaticamente**.
+   * Ele gera plano/patch sugerido.
+   * Aplicar código só depois.
+
+5. **Primeira entrega**
+
+   * Canvas funcional.
+   * Criar/editar nós.
+   * Criar/editar conexões.
+   * Chat lateral por nó.
+   * Snapshot JSON.
+   * Diff simples entre snapshots.
+
+A partir daqui, dá pra escrever a spec completa e depois mandar pro agente construir com muito menos chance dele surtar igual estagiário em sexta-feira.
+
+
+
+Bora. **Spec v0.1 — Living Software Canvas**
+
+## 1. Ideia central
+
+Um canvas visual para projetos Next.js onde cada nó representa uma parte real do sistema:
+
+**página, rota, componente, API, auth, proxy/middleware, banco, gateway, botão/link.**
+
+Cada nó também funciona como um **mini-chat contextual**, com prompt, anexos, prints, regras, bugs e tarefas.
+
+## 2. MVP realista
+
+Primeira versão não altera código sozinha. Ela faz:
+
+1. Canvas com nós e conexões.
+2. Chat lateral por nó.
+3. Upload de anexos.
+4. Snapshot do estado atual.
+5. Comparação entre snapshots.
+6. Exportação JSON.
+7. Prompt consolidado para agente IA.
+
+## 3. Stack
+
+* **Next.js App Router**
+* **TypeScript**
+* **xyflow/React Flow**
+* **Vercel AI SDK/Gateway**
+* **Vercel Blob** para anexos
+* **GitHub** para versionar snapshots
+* **Graph-It-Live** depois, como scanner do projeto real
+
+## 4. Modelo de dados base
+
+```ts
+type CanvasNode = {
+  id: string
+  type: 'page' | 'route' | 'component' | 'api' | 'auth' | 'proxy' | 'database' | 'gateway' | 'ui-action'
+  label: string
+  filePath?: string
+  routePath?: string
+  description?: string
+  prompts: string[]
+  notes: string[]
+  attachments: Attachment[]
+  status: 'draft' | 'mapped' | 'needs-review' | 'approved'
+}
+
+type CanvasEdge = {
+  id: string
+  source: string
+  target: string
+  type: 'navigates-to' | 'renders' | 'calls-api' | 'redirects' | 'auth-guards' | 'queries-db'
+  label?: string
+}
+
+type Snapshot = {
+  id: string
+  name: string
+  createdAt: string
+  nodes: CanvasNode[]
+  edges: CanvasEdge[]
+}
+```
+
+## 5. Telas
+
+**Canvas principal**
+Mapa visual estilo n8n.
+
+**Painel lateral do nó**
+Chat, descrição, anexos, prompt, arquivo vinculado, rota vinculada.
+
+**Snapshots**
+Lista de versões salvas tipo commit visual.
+
+**Diff**
+Mostra o que mudou: nó criado, edge removida, prompt alterado.
+
+## 6. Regra de segurança
+
+Nada de “aplicar mudança no código” no MVP.
+Primeiro: **gerar plano/patch sugerido**.
+
+Aplicação automática só na v0.2 ou v0.3. Senão vira motosserra com Wi-Fi.
+
+## 7. Próxima etapa
+
+Agora eu montaria o **prompt mestre para o Replit/agent construir o MVP**, com escopo fechado, pra ele não inventar moda.
