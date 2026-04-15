@@ -3,9 +3,10 @@ import { useCanvasStore } from '../store/useCanvasStore';
 
 interface ToolbarProps {
   onGeneratePlan: () => void;
+  onOpenScan: () => void;
 }
 
-export default function Toolbar({ onGeneratePlan }: ToolbarProps) {
+export default function Toolbar({ onGeneratePlan, onOpenScan }: ToolbarProps) {
   const {
     takeSnapshot,
     setSnapshotPanelOpen,
@@ -120,6 +121,26 @@ export default function Toolbar({ onGeneratePlan }: ToolbarProps) {
           <path d="M13 7C13 4.8 11.2 3 9 3C6.8 3 5 4.8 5 7C5 9.2 6.8 11 9 11H12" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
           <path d="M10.5 9L13 11L10.5 13" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
+      </button>
+
+      <div style={{ width: '1px', height: '18px', background: '#1e2128' }} />
+
+      {/* Import button */}
+      <button
+        onClick={onOpenScan}
+        style={{
+          display: 'flex', alignItems: 'center', gap: '5px',
+          background: 'transparent', border: '1px solid #252830', borderRadius: '4px',
+          padding: '3px 10px', color: '#6b7280',
+          fontSize: '10px', fontFamily: 'monospace', cursor: 'pointer',
+        }}
+        title="Importar projeto / carregar preset"
+      >
+        <svg viewBox="0 0 16 16" fill="none" width="10" height="10">
+          <path d="M8 2V10M8 10L5 7M8 10L11 7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M2 13H14" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+        </svg>
+        Importar
       </button>
 
       <div style={{ width: '1px', height: '18px', background: '#1e2128' }} />

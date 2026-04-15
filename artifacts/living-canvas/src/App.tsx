@@ -7,6 +7,7 @@ import InspectorPanel from './components/InspectorPanel';
 import SnapshotPanel from './components/SnapshotPanel';
 import PlanPanel from './components/PlanPanel';
 import CommandBar from './components/CommandBar';
+import ScanPanel from './components/ScanPanel';
 import { useCanvasStore } from './store/useCanvasStore';
 import type { NodeType } from './types';
 import { NODE_TYPE_CONFIGS } from './components/nodes/nodeConfig';
@@ -104,6 +105,7 @@ function AppContent() {
   } = useCanvasStore();
 
   const [showTypePicker, setShowTypePicker] = useState(false);
+  const [showScanPanel, setShowScanPanel] = useState(false);
 
   const addNodeOfType = useCallback(
     (type: NodeType) => {
@@ -286,8 +288,9 @@ function AppContent() {
           onClose={() => setShowTypePicker(false)}
         />
       )}
+      {showScanPanel && <ScanPanel onClose={() => setShowScanPanel(false)} />}
       <CommandBar />
-      <Toolbar onGeneratePlan={handleGeneratePlan} />
+      <Toolbar onGeneratePlan={handleGeneratePlan} onOpenScan={() => setShowScanPanel(true)} />
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
         <LeftPalette />
         <CanvasView />
