@@ -78,7 +78,8 @@ function CanvasNode({ data, selected }: NodeProps<CanvasNodeData>) {
     data.notes ||
     data.prompt ||
     (data.tasks && data.tasks.length > 0) ||
-    (data.bugs && data.bugs.length > 0)
+    (data.bugs && data.bugs.length > 0) ||
+    (data.attachments && data.attachments.length > 0)
   );
 
   const sideBorderColor = selected ? typeConfig.accentColor : '#252830';
